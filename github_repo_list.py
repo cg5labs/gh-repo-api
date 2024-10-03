@@ -36,12 +36,9 @@ def set_repo_url(args):
             api_org = args.org
         else:
             api_org = os.environ["GH_ORG"]
-
         # use GH orgs API endpoint if organization is provided
         api_url_base = "https://api.github.com/orgs/%s/repos" % api_org
-
     else:
-
         # use GH individual repo owner for GH projects w/o organization
         api_url_base = "https://api.github.com/users/%s/repos" % repo_owner
 
