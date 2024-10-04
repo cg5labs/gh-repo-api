@@ -41,9 +41,7 @@ options:
 
 ```
 
-Create crypto key: Generate a secret.key and store it in the working path.
 
-```$ python3 generate_key.py```
 
 ## Usage
 List (--list) all public repositories in the Github account (--owner) "ovirt":
