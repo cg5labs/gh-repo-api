@@ -2,11 +2,35 @@
 """ Pull a list of code repositories from the Github API """
 
 import argparse
+import logging
 import os
 import requests
 
 # Reference:
 # https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28
+
+
+def configure_logging(log_level,log_format):
+    """ Log handler and console appender config """
+
+    # Create a custom logger
+    logger = logging.getLogger()
+    logger.setLevel(log_level)
+
+    # Create handlers
+    console_handler = logging.StreamHandler()
+
+    # Set levels for handlers
+    console_handler.setLevel(log_level)
+
+    # Create formatters and add them to handlers
+    #log_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    log_fmt = logging.Formatter(log_format)
+    console_handler.setFormatter(log_fmt)
+
+    # Add handlers to the logger
+    logger.addHandler(console_handler)
+
 
 def configure_argparse():
     """ CLI parameters config """
@@ -59,18 +83,16 @@ def get_repos_json(api_url_base, api_user, api_token):
         json_object.extend(response_check.json())
 
     while more_pages is True:
-        #print("requesting URL: " + api_url_base +f"?page={page}")
+        log.debug("requesting URL: " + api_url_base +f"?page={page}")
         response = requests.get(api_url_base +f"?page={page}", auth=(api_user,api_token))
         json_object.extend(response.json())
         page += 1
 
         if response.links["next"]["url"] == response.links["last"]["url"]:
-            #print("requesting last URL: " + api_url_base +f"?page={page}")
+            log.debug("requesting last URL: " + api_url_base +f"?page={page}")
             response = requests.get(api_url_base +f"?page={page}", auth=(api_user,api_token))
             json_object.extend(response.json())
             more_pages = False
-
-    #print(json_object)
 
     return json_object
 
@@ -89,14 +111,14 @@ def get_api_creds(args):
     # prefer API credentials from CLI over environment
     if "API_USER" in os.environ:
         if args.user:
-            print("API_USER env override with --user")
+            log.debug("API_USER env override with --user")
             api_user = args.user
         else:
             api_user = os.environ["API_USER"]
 
     if "API_TOKEN" in os.environ:
         if args.token:
-            print("API_TOKEN env override with --token")
+            log.debug("API_TOKEN env override with --token")
             api_token = args.token
         else:
             api_token = os.environ["API_TOKEN"]
@@ -110,6 +132,11 @@ def main():
 
     parser = configure_argparse()
     args = parser.parse_args()
+
+    log_format = "%(message)s"
+    log_level = "INFO" if not args.debug else "DEBUG"
+    configure_logging(log_level, log_format)
+
 
     api_creds = get_api_creds(args)
     api_user = api_creds['user']
@@ -127,15 +154,19 @@ def main():
             if args.filter in repo['name']:
                 repo_count += 1
                 if args.list:
-                    print(repo['full_name'])
+                    log.info(repo['full_name'])
         else:
             if args.list:
-                print(repo['full_name'])
+                log.info(repo['full_name'])
 
     if args.summary:
-        print("All repos: %s" % (all_repos))
+        log.info("All repos: %s" % (all_repos))
         if args.filter:
-            print("%s repos: %s" % (args.filter,repo_count))
+            log.info("%s repos: %s" % (args.filter,repo_count))
 
 if __name__ == '__main__':
+
+    # instantiate logger
+    log = logging.getLogger(__name__)
+
     main()
